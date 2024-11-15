@@ -13,10 +13,23 @@ import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeS
 contract PriceHook is BaseHook {
     using PoolIdLibrary for PoolKey;
 
+    struct Round {
+        uint256 until;
+        uint256 tokenPrice;
+    }
+    
+    struct Campaign {
+        address projectFund;
+        uint256 vipPrice;
+        address[] vipWL;
+        Round[] rounds;
+    }
+
     // NOTE: ---------------------------------------------------------
     // state variables should typically be unique to a pool
     // a single hook contract should be able to service multiple pools
     // ---------------------------------------------------------------
+    mapping(PoolId => Campaign campaign) public campaigns;
 
     mapping(PoolId => uint256 count) public beforeSwapCount;
     mapping(PoolId => uint256 count) public afterSwapCount;
@@ -85,5 +98,11 @@ contract PriceHook is BaseHook {
     ) external override returns (bytes4) {
         beforeRemoveLiquidityCount[key.toId()]++;
         return BaseHook.beforeRemoveLiquidity.selector;
+    }
+
+    function getCampaignForPool(
+        PoolId  _polId
+    ) view external returns(Campaign memory camp){
+       camp = campaigns[_polId];
     }
 }
