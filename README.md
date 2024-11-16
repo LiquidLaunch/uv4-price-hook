@@ -3,7 +3,14 @@ Developed during ETHGlobal Bangkok Hackathon
 based on https://github.com/uniswapfoundation/v4-template  
 Contract implement simple functionality for launch token campaign.  
 
+### Custom Price Curve Research & Example
+`CustomPriceHook` - contract with Custom Price Curve. Price Customization is possible through
+`PRICE_MULTIPLYER`  constant change. Tested for simple case `PRICE_MULTIPLYER` = 1.  
+More complex curves may cause pool imbalances. Will take longer to implement beyond the hackathon.
 
+```shell
+$ forge test --match-path ./test/custom-accounting/CustomPriceHook.t.sol -vvvv
+```
 ---
 
 ### Check Forge Installation
@@ -29,7 +36,7 @@ Other than writing unit tests (recommended!), you can only deploy & test hooks o
 ```bash
 # start anvil, a local EVM chain
 anvil
-
+PRICE_MULTIPLYER
 # in a new terminal
 forge script script/Anvil.s.sol \
     --rpc-url http://localhost:8545 \
