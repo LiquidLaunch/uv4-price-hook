@@ -13,33 +13,18 @@ import {toBeforeSwapDelta, BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-cor
 import {Currency, CurrencyLibrary} from "v4-core/src/types/Currency.sol";
 import {CurrencySettler} from "./utils/CurrencySettler.sol";
 import {SafeCast} from "v4-core/src/libraries/SafeCast.sol";
+import {CampaignModel_01} from "./models/CampaignModel_01.sol";
 
-contract PriceHook is BaseHook {
+contract PriceHook is BaseHook, CampaignModel_01 {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
     using CurrencySettler for Currency;
     using SafeCast for uint256;
 
-    enum PoolState {NORMAL, CAMPAIGN}
-
-    struct Round {
-        uint256 until;
-        uint256 tokenPrice;
-    }
-    
-    struct Campaign {
-        PoolState poolState;
-        address projectFund;
-        //uint256 vipPrice;
-        //address[] vipWL;
-        Round[] rounds;
-    }
-
     // NOTE: ---------------------------------------------------------
     // state variables should typically be unique to a pool
     // a single hook contract should be able to service multiple pools
     // ---------------------------------------------------------------
-    mapping(PoolId => Campaign campaign) public campaigns;
 
     mapping(PoolId => uint256 count) public beforeSwapCount;
     mapping(PoolId => uint256 count) public afterSwapCount;
@@ -88,17 +73,16 @@ contract PriceHook is BaseHook {
             uint256 specifiedAmount = uint256(-params.amountSpecified);
             uint256 unspecifiedAmount = specifiedAmount * roundPrice;
             returnDelta = toBeforeSwapDelta(specifiedAmount.toInt128(), -unspecifiedAmount.toInt128());
-            //return (BaseHook.beforeSwap.selector, returnDelta, 0);
         } else {
             // use normal UniSwap pool Loogic !!!!!!!!!! Uncoment after debug
 
-            // returnDelta =  BeforeSwapDeltaLibrary.ZERO_DELTA;
+            returnDelta =  BeforeSwapDeltaLibrary.ZERO_DELTA;
 
-            uint256 specifiedAmount = uint256(-params.amountSpecified);
-            uint256 unspecifiedAmount = specifiedAmount * 4;
+            // uint256 specifiedAmount = uint256(-params.amountSpecified);
+            // uint256 unspecifiedAmount = specifiedAmount * 4;
 
-            Currency inputCur  = params.zeroForOne ? key.currency0 : key.currency1;
-            Currency outputCur = params.zeroForOne ? key.currency1 : key.currency0;
+            // Currency inputCur  = params.zeroForOne ? key.currency0 : key.currency1;
+            // Currency outputCur = params.zeroForOne ? key.currency1 : key.currency0;
             
             // This pice is from docd https://www.v4-by-example.org/hooks/custom-curve
             // with take transfer asset to hookConract from poolManager    -NOT   WORKS
@@ -114,7 +98,7 @@ contract PriceHook is BaseHook {
             //inputCur.settle(poolManager, address(this), specifiedAmount, false);
             
             // this decrease errors count CurrencyNotSettled, but still 1
-            poolManager.mint(address(this), inputCur.toId(), specifiedAmount);
+            //poolManager.mint(address(this), inputCur.toId(), specifiedAmount);
 
             //inputCur.settle(poolManager, address(this), specifiedAmount, true);
             //poolManager.mint(sender, outputCur.toId(), unspecifiedAmount);
@@ -128,7 +112,7 @@ contract PriceHook is BaseHook {
             //poolManager.mint(address(this), inputCur.toId(), specifiedAmount);
             
             // This works good
-            returnDelta = toBeforeSwapDelta(specifiedAmount.toInt128(), -unspecifiedAmount.toInt128());
+            //returnDelta = toBeforeSwapDelta(specifiedAmount.toInt128(), -unspecifiedAmount.toInt128());
 
             // This pice is from CustomCurveHook  from corev4/test - not  works
            //returnDelta = toBeforeSwapDelta(-specifiedAmount.toInt128(), specifiedAmount.toInt128());
@@ -167,54 +151,5 @@ contract PriceHook is BaseHook {
         return BaseHook.beforeRemoveLiquidity.selector;
     }
 
-    function getCampaignForPool(
-        PoolId  _polId
-    ) view external returns(Campaign memory camp){
-       camp = campaigns[_polId];
-    }
-    //////////////////////////////////  Campain Hook Logic Functions ///////////////
-
-    function _setCampaignForPool(PoolId  _poolId, Campaign memory _camp) internal {
-        campaigns[_poolId] = _camp;
-
-    }
-
-    function _checkPoolState(PoolId  _poolId) internal returns(PoolState state, uint256 roundPrice) {
-        Campaign memory _camp = campaigns[_poolId];
-        state = _camp.poolState;
-        if (state != PoolState.NORMAL) {
-            roundPrice = _getRoundPrice(_camp);
-            if (roundPrice == 0) {
-                // SET state to NORMAL because of zero price(= campaign finished)
-                campaigns[_poolId].poolState = PoolState.NORMAL;
-                state = PoolState.NORMAL;
-            } 
-        }        
-    }
-
-    function _getRoundPrice(Campaign memory _camp) internal view returns(uint256 rp) {
-        if (_camp.rounds.length != 0 ) {
-            for (uint256 i = 0; i < _camp.rounds.length; ++ i) {
-                // If not last array record
-                // TODO optimize
-                if (i != _camp.rounds.length - 1) {
-                    if(
-                        _camp.rounds[i].until >= block.timestamp 
-                        && _camp.rounds[i + 1].until < block.timestamp 
-                      ) { 
-                           rp = _camp.rounds[i].tokenPrice;
-                        }
-                } else {
-                    // if lsat record then need check only it
-                    if (_camp.rounds[i].until >= block.timestamp) {
-                        rp = _camp.rounds[i].tokenPrice;
-                    }
-                }
-            }
-        }
-    }
-
-    function _getPoolState(PoolId  _polId) view internal returns(PoolState) {
-        return campaigns[_polId].poolState;
-    }
+    
 }
