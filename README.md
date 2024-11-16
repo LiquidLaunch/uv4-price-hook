@@ -1,4 +1,4 @@
-# Uniswap V4 price hook
+# Uniswap V4  hook (price and whitelist)
 Developed during ETHGlobal Bangkok Hackathon  
 based on https://github.com/uniswapfoundation/v4-template  
 Contract implement simple functionality for launch token campaign.  
@@ -11,6 +11,15 @@ More complex curves may cause pool imbalances. Will take longer to implement bey
 ```shell
 $ forge test --match-path ./test/custom-accounting/CustomPriceHook.t.sol -vvvv
 ```
+### Custom White List Hook Example
+`WhiteListHook` - contract with Custom WhiteList. Only approved addresses are enabled for swap.
+
+`addWLAddress(address(this), true)`  method can be used for manage whitelist
+
+```shell
+$ forge test --match-path ./test/WLHook.t.sol -vvvv
+```
+
 ---
 
 ### Check Forge Installation
