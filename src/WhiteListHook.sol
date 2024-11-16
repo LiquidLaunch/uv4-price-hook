@@ -77,8 +77,9 @@ contract WhiteListHook is BaseHook {
     // NOTE: see IHooks.sol for function documentation
     // -----------------------------------------------
 
-    function beforeSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata params, bytes calldata hookParams)
+    function beforeSwap(address, PoolKey calldata, IPoolManager.SwapParams calldata, bytes calldata hookParams)
         external
+        view
         override
         returns (bytes4, BeforeSwapDelta, uint24)
     {

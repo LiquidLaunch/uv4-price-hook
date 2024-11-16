@@ -88,61 +88,20 @@ contract WLHookTest is Test, Fixtures {
         );
     }
 
-    function testPriceBeforeSwapHook() public {
-        
-
-        // DebugB memory bal;
-        // bal.bf0 = currency0.balanceOf(address(this));
-        // bal.bf1 = currency1.balanceOf(address(this));
-        // positions were created in setup()
-        //assertEq(hook.beforeAddLiquidityCount(poolId), 1);
-        //assertEq(hook.beforeRemoveLiquidityCount(poolId), 0);
-
-        //assertEq(hook.beforeSwapCount(poolId), 0);
-        //assertEq(hook.afterSwapCount(poolId), 0);
-
-        // Perform a test swap //
+    function testWLHook_fail() public {
         bool zeroForOne = true;
         int256 amountSpecified = -1e18; // negative number indicates exact input swap!
-        //BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
         vm.expectRevert();
-        BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, abi.encode(address(this)));
-
-        hook.addWLAddress(address(this), true);
-        swapDelta = swap(key, zeroForOne, amountSpecified, abi.encode(address(this)));
-        // ------------------- //
-
-        assertEq(int256(swapDelta.amount0()), amountSpecified);
-        // bal.after0 = currency0.balanceOf(address(this));
-        // bal.after1 = currency1.balanceOf(address(this));
-
-        // assertEq(bal.bf0 - bal.after0, 1e18);
-        // assertEq(bal.after1 - bal.bf1, 1e18 * 4);
-
-
-
-        //assertEq(hook.beforeSwapCount(poolId), 0);
-        //assertEq(hook.afterSwapCount(poolId), 1);
+        swap(key, zeroForOne, amountSpecified, abi.encode(address(this)));
     }
 
-    // function testLiquidityHooks() public {
-    //     // positions were created in setup()
-    //     assertEq(hook.beforeAddLiquidityCount(poolId), 1);
-    //     assertEq(hook.beforeRemoveLiquidityCount(poolId), 0);
+    function testWLHook_OK() public {
+        bool zeroForOne = true;
+        int256 amountSpecified = -1e18; // negative number indicates exact input swap!
+        hook.addWLAddress(address(this), true);
+        BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, abi.encode(address(this)));
+        assertEq(int256(swapDelta.amount0()), amountSpecified);
 
-    //     // remove liquidity
-    //     uint256 liquidityToRemove = 1e18;
-    //     posm.decreaseLiquidity(
-    //         tokenId,
-    //         liquidityToRemove,
-    //         MAX_SLIPPAGE_REMOVE_LIQUIDITY,
-    //         MAX_SLIPPAGE_REMOVE_LIQUIDITY,
-    //         address(this),
-    //         block.timestamp,
-    //         ZERO_BYTES
-    //     );
+    }
 
-    //     assertEq(hook.beforeAddLiquidityCount(poolId), 1);
-    //     assertEq(hook.beforeRemoveLiquidityCount(poolId), 1);
-    // }
 }
