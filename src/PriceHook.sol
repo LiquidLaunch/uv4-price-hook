@@ -9,9 +9,14 @@ import {PoolKey} from "v4-core/src/types/PoolKey.sol";
 import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
 import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeSwapDelta.sol";
+import {toBeforeSwapDelta, BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeSwapDelta.sol";
+import {Currency, CurrencyLibrary} from "v4-core/src/types/Currency.sol";
+import {SafeCast} from "v4-core/src/libraries/SafeCast.sol";
 
 contract PriceHook is BaseHook {
     using PoolIdLibrary for PoolKey;
+    using CurrencyLibrary for Currency;
+    using SafeCast for uint256;
 
     enum PoolState {NORMAL, CAMPAIGN}
 
@@ -54,7 +59,7 @@ contract PriceHook is BaseHook {
             afterSwap: true,
             beforeDonate: false,
             afterDonate: false,
-            beforeSwapReturnDelta: false,
+            beforeSwapReturnDelta: true, //  for custom  price curve enable
             afterSwapReturnDelta: false,
             afterAddLiquidityReturnDelta: false,
             afterRemoveLiquidityReturnDelta: false
@@ -65,21 +70,28 @@ contract PriceHook is BaseHook {
     // NOTE: see IHooks.sol for function documentation
     // -----------------------------------------------
 
-    function beforeSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata, bytes calldata)
+    function beforeSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata params, bytes calldata)
         external
         override
         returns (bytes4, BeforeSwapDelta, uint24)
     {
         // Check Campaign state of exact pool
+        BeforeSwapDelta returnDelta;
         (PoolState state, uint256 roundPrice) = _checkPoolState(key.toId());
         if (roundPrice != 0 && state == PoolState.CAMPAIGN) {
+            // TODO add check that only exactInput this mode can serve
             // use this price for swap
-
+            
+            uint256 specifiedAmount = uint256(-params.amountSpecified);
+            uint256 unspecifiedAmount = specifiedAmount * roundPrice;
+            returnDelta = toBeforeSwapDelta(specifiedAmount.toInt128(), -unspecifiedAmount.toInt128());
+            //return (BaseHook.beforeSwap.selector, returnDelta, 0);
         } else {
             // use normal UniSwap pool Loogic
+            returnDelta =  BeforeSwapDeltaLibrary.ZERO_DELTA;
         }
         //beforeSwapCount[key.toId()]++;
-        return (BaseHook.beforeSwap.selector, BeforeSwapDeltaLibrary.ZERO_DELTA, 0);
+        return (BaseHook.beforeSwap.selector, returnDelta, 0);
     }
 
     function afterSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata, BalanceDelta, bytes calldata)
