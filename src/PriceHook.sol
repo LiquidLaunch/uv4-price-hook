@@ -96,13 +96,19 @@ contract PriceHook is BaseHook {
 
             uint256 specifiedAmount = uint256(-params.amountSpecified);
             uint256 unspecifiedAmount = specifiedAmount * 4;
+
             Currency inputCur  = params.zeroForOne ? key.currency0 : key.currency1;
             Currency outputCur = params.zeroForOne ? key.currency1 : key.currency0;
             
             // with fakse transfer asset to hookConract from poolManager
             //outputCur.take(poolManager, address(poolManager), unspecifiedAmount, true);
+
             //inputCur.settle(poolManager, address(this), specifiedAmount, false);
-            //poolManager.mint(address(this), inputCur.toId(), specifiedAmount);
+            
+            // this decrease errors count CurrencyNotSettled, but still 1
+            poolManager.mint(address(this), inputCur.toId(), specifiedAmount);
+
+            inputCur.settle(poolManager, address(this), specifiedAmount, true);
             //poolManager.mint(sender, outputCur.toId(), unspecifiedAmount);
             //poolManager.mint(address(poolManager), outputCur.toId(), unspecifiedAmount);
             //poolManager.sync(inputCur);
