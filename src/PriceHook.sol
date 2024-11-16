@@ -11,11 +11,13 @@ import {BalanceDelta} from "v4-core/src/types/BalanceDelta.sol";
 import {BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeSwapDelta.sol";
 import {toBeforeSwapDelta, BeforeSwapDelta, BeforeSwapDeltaLibrary} from "v4-core/src/types/BeforeSwapDelta.sol";
 import {Currency, CurrencyLibrary} from "v4-core/src/types/Currency.sol";
+import {CurrencySettler} from "./utils/CurrencySettler.sol";
 import {SafeCast} from "v4-core/src/libraries/SafeCast.sol";
 
 contract PriceHook is BaseHook {
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
+    using CurrencySettler for Currency;
     using SafeCast for uint256;
 
     enum PoolState {NORMAL, CAMPAIGN}
@@ -70,11 +72,12 @@ contract PriceHook is BaseHook {
     // NOTE: see IHooks.sol for function documentation
     // -----------------------------------------------
 
-    function beforeSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata params, bytes calldata)
+    function beforeSwap(address, PoolKey calldata key, IPoolManager.SwapParams calldata params, bytes calldata hookParams)
         external
         override
         returns (bytes4, BeforeSwapDelta, uint24)
     {
+        address sender = abi.decode(hookParams, (address));
         // Check Campaign state of exact pool
         BeforeSwapDelta returnDelta;
         (PoolState state, uint256 roundPrice) = _checkPoolState(key.toId());
@@ -87,8 +90,29 @@ contract PriceHook is BaseHook {
             returnDelta = toBeforeSwapDelta(specifiedAmount.toInt128(), -unspecifiedAmount.toInt128());
             //return (BaseHook.beforeSwap.selector, returnDelta, 0);
         } else {
-            // use normal UniSwap pool Loogic
-            returnDelta =  BeforeSwapDeltaLibrary.ZERO_DELTA;
+            // use normal UniSwap pool Loogic !!!!!!!!!! Uncoment after debug
+
+            // returnDelta =  BeforeSwapDeltaLibrary.ZERO_DELTA;
+
+            uint256 specifiedAmount = uint256(-params.amountSpecified);
+            uint256 unspecifiedAmount = specifiedAmount * 4;
+            Currency inputCur  = params.zeroForOne ? key.currency0 : key.currency1;
+            Currency outputCur = params.zeroForOne ? key.currency1 : key.currency0;
+            
+            // with fakse transfer asset to hookConract from poolManager
+            //outputCur.take(poolManager, address(poolManager), unspecifiedAmount, true);
+            //inputCur.settle(poolManager, address(this), specifiedAmount, false);
+            //poolManager.mint(address(this), inputCur.toId(), specifiedAmount);
+            //poolManager.mint(sender, outputCur.toId(), unspecifiedAmount);
+            //poolManager.mint(address(poolManager), outputCur.toId(), unspecifiedAmount);
+            //poolManager.sync(inputCur);
+            //poolManager.sync(outputCur);
+            //poolManager.settle();
+            //poolManager.burn(address(poolManager), outputCur.toId(), specifiedAmount);
+            
+            //outputCur.settle(poolManager, address(poolManager), unspecifiedAmount, true);
+            //poolManager.mint(address(this), inputCur.toId(), specifiedAmount);
+            returnDelta = toBeforeSwapDelta(specifiedAmount.toInt128(), -unspecifiedAmount.toInt128());
         }
         //beforeSwapCount[key.toId()]++;
         return (BaseHook.beforeSwap.selector, returnDelta, 0);
@@ -100,6 +124,7 @@ contract PriceHook is BaseHook {
         returns (bytes4, int128)
     {
         afterSwapCount[key.toId()]++;
+        //poolManager.settle();
         return (BaseHook.afterSwap.selector, 0);
     }
 

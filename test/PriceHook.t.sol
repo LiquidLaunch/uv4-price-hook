@@ -32,6 +32,13 @@ contract PriceHookTest is Test, Fixtures {
     int24 tickLower;
     int24 tickUpper;
 
+    struct DebugB {
+            uint256 bf0;
+            uint256 after0;
+            uint256 bf1;
+            uint256 after1;
+        }
+
     function setUp() public {
         // creates the pool manager, utility routers, and test tokens
         deployFreshManagerAndRouters();
@@ -82,6 +89,11 @@ contract PriceHookTest is Test, Fixtures {
     }
 
     function testPriceBeforeSwapHook() public {
+        
+
+        DebugB memory bal;
+        bal.bf0 = currency0.balanceOf(address(this));
+        bal.bf1 = currency1.balanceOf(address(this));
         // positions were created in setup()
         //assertEq(hook.beforeAddLiquidityCount(poolId), 1);
         //assertEq(hook.beforeRemoveLiquidityCount(poolId), 0);
@@ -92,10 +104,18 @@ contract PriceHookTest is Test, Fixtures {
         // Perform a test swap //
         bool zeroForOne = true;
         int256 amountSpecified = -1e18; // negative number indicates exact input swap!
-        BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+        //BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, ZERO_BYTES);
+        BalanceDelta swapDelta = swap(key, zeroForOne, amountSpecified, abi.encode(address(this)));
         // ------------------- //
 
         assertEq(int256(swapDelta.amount0()), amountSpecified);
+        bal.after0 = currency0.balanceOf(address(this));
+        bal.after1 = currency1.balanceOf(address(this));
+
+        assertEq(bal.bf0 - bal.after0, 1e18);
+        assertEq(bal.after1 - bal.bf1, 1e18 * 4);
+
+
 
         //assertEq(hook.beforeSwapCount(poolId), 0);
         //assertEq(hook.afterSwapCount(poolId), 1);
