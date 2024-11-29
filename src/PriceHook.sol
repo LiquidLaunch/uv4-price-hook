@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {BaseHook} from "v4-periphery/src/base/hooks/BaseHook.sol";
 
+import {IHooks} from "v4-core/src/interfaces/IHooks.sol";
 import {Hooks} from "v4-core/src/libraries/Hooks.sol";
 import {IPoolManager} from "v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "v4-core/src/types/PoolKey.sol";
@@ -36,7 +37,7 @@ contract PriceHook is BaseHook, CampaignModel_01 {
 
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
         return Hooks.Permissions({
-            beforeInitialize: false,
+            beforeInitialize: true,
             afterInitialize: false,
             beforeAddLiquidity: true,
             afterAddLiquidity: false,
@@ -149,6 +150,11 @@ contract PriceHook is BaseHook, CampaignModel_01 {
     ) external override returns (bytes4) {
         beforeRemoveLiquidityCount[key.toId()]++;
         return BaseHook.beforeRemoveLiquidity.selector;
+    }
+
+    function beforeInitialize(address, PoolKey calldata, uint160) external pure override returns (bytes4) {
+        //return bytes4(0xffffffff);
+        return IHooks.beforeInitialize.selector;
     }
 
     

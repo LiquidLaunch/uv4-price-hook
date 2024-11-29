@@ -12,6 +12,7 @@ import {PoolId, PoolIdLibrary} from "v4-core/src/types/PoolId.sol";
 import {CurrencyLibrary, Currency} from "v4-core/src/types/Currency.sol";
 import {PoolSwapTest} from "v4-core/src/test/PoolSwapTest.sol";
 import {PriceHook} from "../src/PriceHook.sol";
+import {CampaignModel_01} from "../src/models/CampaignModel_01.sol";
 import {StateLibrary} from "v4-core/src/libraries/StateLibrary.sol";
 
 import {LiquidityAmounts} from "v4-core/test/utils/LiquidityAmounts.sol";
@@ -19,7 +20,7 @@ import {IPositionManager} from "v4-periphery/src/interfaces/IPositionManager.sol
 import {EasyPosm} from "./utils/EasyPosm.sol";
 import {Fixtures} from "./utils/Fixtures.sol";
 
-contract PriceHookTest is Test, Fixtures {
+contract PriceHookParamsTest is Test, Fixtures {
     using EasyPosm for IPositionManager;
     using PoolIdLibrary for PoolKey;
     using CurrencyLibrary for Currency;
@@ -31,6 +32,8 @@ contract PriceHookTest is Test, Fixtures {
     uint256 tokenId;
     int24 tickLower;
     int24 tickUpper;
+
+
 
     struct DebugB {
             uint256 bf0;
@@ -75,6 +78,20 @@ contract PriceHookTest is Test, Fixtures {
             liquidityAmount
         );
 
+        CampaignModel_01.Round[] memory rounds = new CampaignModel_01.Round[](3);
+        rounds[0] = CampaignModel_01.Round(10, 1);
+        rounds[1] = CampaignModel_01.Round(20, 2);
+        rounds[2] = CampaignModel_01.Round(100, 1);
+
+        CampaignModel_01.Campaign memory campaign;
+        campaign = CampaignModel_01.Campaign(
+            CampaignModel_01.PoolState.CAMPAIGN,
+            address(this),
+            rounds
+        );
+
+        bytes memory hookDataInit = abi.encode(campaign);
+
         (tokenId,) = posm.mint(
             key,
             tickLower,
@@ -84,7 +101,7 @@ contract PriceHookTest is Test, Fixtures {
             amount1Expected + 1,
             address(this),
             block.timestamp,
-            ZERO_BYTES
+            hookDataInit
         );
     }
 
